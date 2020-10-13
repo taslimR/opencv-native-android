@@ -342,7 +342,7 @@ public class MainActivity extends AppCompatActivity {
         // and threshold it to give it the paper effect
         Imgproc.cvtColor(transformed, transformed, Imgproc.COLOR_BGRA2GRAY);
         Imgproc.adaptiveThreshold(transformed, transformed, 251,
-                Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 21, 10);
+                Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 21, 21);
 
         final Size transformedSize = transformed.size();
         final int resultW = (int) transformedSize.width;
