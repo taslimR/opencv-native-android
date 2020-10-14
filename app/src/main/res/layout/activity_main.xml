@@ -37,7 +37,7 @@
         android:layout_gravity="center_vertical|center_horizontal"
         android:layout_margin="16dp"
         android:gravity="center_horizontal"
-        android:text="Transform Image"
+        android:text="@string/transform_image"
         android:textAlignment="center"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         tools:ignore="MissingConstraints" />
