@@ -122,6 +122,11 @@ public class MainActivity extends AppCompatActivity {
         OpenCVLoader.initDebug();
     }
 
+    private Bitmap transformed;
+    private Bitmap edged;
+    private int resultW;
+    private int resultH;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         uploadFile = new UploadFile();
@@ -154,7 +159,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 
-                showProgressDialog(getResources().getString(R.string.loading));
+//                showProgressDialog(getResources().getString(R.string.loading));
 
 //                labelSet = true;
 //                if (labelSet)
@@ -168,26 +173,33 @@ public class MainActivity extends AppCompatActivity {
 
 
                 OpenCVLoader.initDebug();
-                AsyncTask.execute(new Runnable() {
-                    BitmapDrawable drawable = (BitmapDrawable) imageView.getDrawable();
-                    Bitmap bitmap;
-                    @Override
-                    public void run() {
-                        try {
-                            bitmapArg = transformImage();
-                            callApi();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            dismissDialog();
-                        }
+
+                step1();
+                step2();
+
+//                showProgressDialog(getResources().getString(R.string.loading));
+//                AsyncTask.execute(new Runnable() {
+//                    BitmapDrawable drawable = (BitmapDrawable) imageView.getDrawable();
+//                    Bitmap bitmap;
+//                    @Override
+//                    public void run() {
+//                        try {
+////                            bitmapArg = transformImage();
+//                            callApi();
+//                        } catch (Exception e) {
+//                            e.printStackTrace();
+//                            dismissDialog();
+//                        }
 //                        MainActivity.this.runOnUiThread(new Runnable() {
 //                            @Override
 //                            public void run() {
 //                                dismissDialog();
 //                            }
 //                        });
-                    }
-                });
+//                    }
+//                });
+//                dismissDialog();
+
             }
         });
     }
@@ -324,6 +336,66 @@ public class MainActivity extends AppCompatActivity {
         return cursor.getString(column_index);
     }
 
+    private void step1() {
+//        showProgressDialog(getResources().getString(R.string.loading));
+        AsyncTask.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    transformed = detectEdges(bitmapArg);
+                } catch (final OutOfMemoryError e) {
+                    MainActivity.this.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            transformed = bitmapArg;
+                            imageView.setImageBitmap(bitmapArg);
+                            e.printStackTrace();
+//                            dismissDialog();
+                        }
+                    });
+                }
+                MainActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        imageView.setImageBitmap(transformed);
+//                        dismissDialog();
+                    }
+                });
+            }
+        });
+    }
+
+
+    private void step2() {
+//        showProgressDialog(getResources().getString(R.string.loading));
+        AsyncTask.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    transformed = applyPerspectiveTransform(edged);
+                } catch (final OutOfMemoryError e) {
+                    MainActivity.this.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            transformed = bitmapArg;
+                            imageView.setImageBitmap(bitmapArg);
+                            e.printStackTrace();
+//                            dismissDialog();
+                        }
+                    });
+                }
+                MainActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        imageView.setImageBitmap(transformed);
+                        callApi();
+//                        dismissDialog();
+                    }
+                });
+            }
+        });
+    }
+
 
     private Bitmap detectEdges(Bitmap bitmap) {
         Mat rgba = new Mat();
@@ -334,9 +406,181 @@ public class MainActivity extends AppCompatActivity {
         Imgproc.Canny(edges, edges, 80, 100);
         Imgproc.GaussianBlur(edges,edges,new Size(5,5),0);
 
-        Bitmap resultBitmap = Bitmap.createBitmap(edges.cols(), edges.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(edges, resultBitmap);
+        edged = Bitmap.createBitmap(edges.cols(), edges.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(edges, edged);
+
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        bitmapArg.compress(Bitmap.CompressFormat.PNG, 100, stream);
+//        newBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+
+        Mat matImage = new Mat();
+        Utils.bitmapToMat(bitmapArg, matImage);
+
+//        Mat outputMat = new Mat();
+//        Utils.bitmapToMat(newBitmap, outputMat);
+
+        Imgproc.GaussianBlur(edges, edges, new Size(5, 5), 5);
+
+//        Imgproc.cvtColor(edges, edges, Imgproc.COLOR_BGR2GRAY);
+
+        // find the contours
+        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+        findContours(edges, contours, edges, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
+
+        /*
+         *
+         * previous code
+         *
+         */
+        final Mat target = new GetTargetContour(contours).target();
+        if (contours == null) {
+            Log.w("Contours", "Can't find target contour, aborting...");
+            return null;
+        }
+        Log.d("Contours", "Target contour found!");
+
+
+        double maxVal = 0;
+        int maxValIdx = 0;
+        for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++)
+        {
+            double contourArea = Imgproc.contourArea(contours.get(contourIdx));
+            if (maxVal < contourArea)
+            {
+                maxVal = contourArea;
+                maxValIdx = contourIdx;
+            }
+        }
+
+        Mat duply = matImage.clone();
+
+        final MatOfPoint biggest = contours.get(maxValIdx);
+        List<Point> corners = getCornersFromPoints(biggest.toList());
+        System.out.println("corner size " + corners.size());
+        for (Point corner : corners) {
+            Imgproc.drawMarker(duply, corner, new Scalar(0,191,255, 255), 0, 20, 5);
+        }
+
+        Imgproc.drawContours(duply, contours, maxValIdx, new Scalar(124,252,0, 255), 7);
+
+        //         Sort points
+        Point[] points = new MatOfPoint(contours.get(maxValIdx)).toArray();
+        points = new SortPointArray(points).sort();
+        Log.d("Points", "Points: " + Arrays.toString(points));
+
+        Bitmap resultBitmap = Bitmap.createBitmap(duply.cols(), duply.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(duply, resultBitmap);
+
         return resultBitmap;
+    }
+
+    private Bitmap applyPerspectiveTransform(Bitmap newBitmap) {
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        bitmapArg.compress(Bitmap.CompressFormat.PNG, 100, stream);
+        newBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+
+        Mat matImage = new Mat();
+        Utils.bitmapToMat(bitmapArg, matImage);
+
+        Mat outputMat = new Mat();
+        Utils.bitmapToMat(newBitmap, outputMat);
+
+        Imgproc.GaussianBlur(outputMat, outputMat, new org.opencv.core.Size(5, 5), 5);
+
+        Imgproc.cvtColor(outputMat, outputMat, Imgproc.COLOR_BGR2GRAY);
+
+        // find the contours
+        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+        findContours(outputMat, contours, outputMat, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
+
+        /*
+         *
+         * previous code
+         *
+         */
+        final Mat target = new GetTargetContour(contours).target();
+        if (contours == null) {
+            Log.w("Contours", "Can't find target contour, aborting...");
+            return null;
+        }
+        Log.d("Contours", "Target contour found!");
+
+
+        double maxVal = 0;
+        int maxValIdx = 0;
+        for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++)
+        {
+            double contourArea = Imgproc.contourArea(contours.get(contourIdx));
+            if (maxVal < contourArea)
+            {
+                maxVal = contourArea;
+                maxValIdx = contourIdx;
+            }
+        }
+
+        Mat duply = matImage.clone();
+
+        final MatOfPoint biggest = contours.get(maxValIdx);
+        List<Point> corners = getCornersFromPoints(biggest.toList());
+        System.out.println("corner size " + corners.size());
+        for (Point corner : corners) {
+            Imgproc.drawMarker(duply, corner, new Scalar(0,191,255, 255), 0, 20, 5);
+        }
+
+        Imgproc.drawContours(duply, contours, maxValIdx, new Scalar(124,252,0, 255), 5);
+
+        //         Sort points
+        Point[] points = new MatOfPoint(contours.get(maxValIdx)).toArray();
+        points = new SortPointArray(points).sort();
+        Log.d("Points", "Points: " + Arrays.toString(points));
+
+        // Now apply perspective transformation
+        final TransformPerspective transformPerspective = new TransformPerspective(
+                points, matImage);
+        final Mat transformed = transformPerspective.transform();
+
+
+
+        // With the transformed points, now convert the image to gray scale
+        // and threshold it to give it the paper effect
+        Imgproc.cvtColor(transformed, transformed, Imgproc.COLOR_BGRA2GRAY);
+        Imgproc.adaptiveThreshold(transformed, transformed, 255,
+                Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 75, 25);
+
+        Size transformedSize = transformed.size();
+        resultW = (int) transformedSize.width;
+        resultH = (int) transformedSize.height;
+
+        final Mat result = new Mat(resultH, resultW, CvType.CV_8UC4);
+        transformed.convertTo(result, CvType.CV_8UC4);
+
+        final Bitmap bitmapImg = Bitmap.createBitmap(resultW, resultH, Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(result, bitmapImg);
+
+//        Bitmap bitmapImg_result = Bitmap.createBitmap(resultW, resultH, Bitmap.Config.ARGB_8888);
+//        Utils.matToBitmap(result, bitmapImg_result);
+//        result.release();
+//        String filename = "result"+ new Timestamp(System.currentTimeMillis()).getTime() +".png";
+//        File sd = Environment.getExternalStorageDirectory();
+//        File dest = new File(sd, filename);
+//        Log.d("ImagePath", dest.getPath());
+//        try {
+//            FileOutputStream out = new FileOutputStream(dest);
+//            bitmapImg.compress(Bitmap.CompressFormat.PNG, 100, out);
+//            out.flush();
+//            out.close();
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//
+//        imageView.setImageBitmap(bitmapImg);
+        return bitmapImg;
     }
 
 
@@ -619,12 +863,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void callApi() {
+        showProgressDialog(getResources().getString(R.string.loading));
+        AsyncTask.execute(new Runnable() {
+            @Override
+            public void run() {
         try {
             String postUrl= "http://192.168.0.106:8000/v1/api/nidscan/";
             String postBody= null;
 
                 postBody = "{" +
-                        "    \"image\": \""+ConvertBitmapToString(bitmapArg)+"\"\n" +
+                        "    \"image\": \""+ConvertBitmapToString(transformed)+"\"\n" +
                         "}";
 
             Log.e("str ---> ", postBody);
@@ -638,10 +886,18 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 onFailureResponse();
             }
-        } catch (JSONException e) {
+        } catch (Exception e) {
             e.printStackTrace();
-            onFailureResponse();
+            dismissDialog();
         }
+                MainActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        dismissDialog();
+                    }
+                });
+            }
+        });
     }
 
     public Object postJson(String url, String jsonStr){
