@@ -14,18 +14,17 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="top"
-            android:layout_gravity="center_vertical"
+            
+            android:layout_gravity="top"
             android:orientation="horizontal"
             android:weightSum="1"
             tools:ignore="MissingConstraints">
 
             <TextView
                 android:id="@+id/lbl_card_type"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
-                android:layout_marginTop="50dp"
                 android:layout_weight="0.5"
                 android:text="Card Type:"
                 android:textColor="#000"
@@ -34,11 +33,9 @@
 
             <TextView
                 android:id="@+id/card_type"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="left"
-                android:layout_centerHorizontal="true"
-                android:layout_marginTop="50dp"
                 android:layout_weight="0.5"
                 android:text="National ID Card"
                 android:textColor="#000"
@@ -55,10 +52,10 @@
             <TextView
                 android:layout_weight="0.5"
                 android:id="@+id/lbl_nid_number"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
-                android:layout_marginTop="50dp"
+                
                 android:text="NID Number:"
                 android:textColor="#000"
                 android:textSize="20sp"
@@ -66,12 +63,12 @@
             <TextView
                 android:layout_weight="0.5"
                 android:id="@+id/nid_number"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
-                android:layout_marginTop="50dp"
+                
                 android:gravity="left"
-                android:text="M"
+                android:text=""
                 android:textColor="#000"
                 android:textSize="20sp"
                 tools:ignore="MissingConstraints" />
@@ -85,10 +82,10 @@
             <TextView
                 android:layout_weight="0.5"
                 android:id="@+id/lbl_country"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
-                android:layout_marginTop="50dp"
+                
                 android:text="Country:"
                 android:textColor="#000"
                 android:textSize="20sp"
@@ -96,10 +93,11 @@
             <TextView
                 android:layout_weight="0.5"
                 android:id="@+id/country"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
-                android:layout_marginTop="50dp"
+
+                android:gravity="left"
                 android:text=""
                 android:textColor="#000"
                 android:textSize="20sp"
@@ -114,10 +112,10 @@
             <TextView
                 android:layout_weight="0.5"
                 android:id="@+id/lbl_first_name"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
-                android:layout_marginTop="50dp"
+                
                 android:text="First Name:"
                 android:textColor="#000"
                 android:textSize="20sp"
@@ -125,10 +123,11 @@
             <TextView
                 android:layout_weight="0.5"
                 android:id="@+id/first_name"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
-                android:layout_marginTop="50dp"
+
+                android:gravity="left"
                 android:text=""
                 android:textColor="#000"
                 android:textSize="20sp"
@@ -143,10 +142,10 @@
             <TextView
                 android:layout_weight="0.5"
                 android:id="@+id/lbl_last_name"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
-                android:layout_marginTop="50dp"
+                
                 android:text="Last Name:"
                 android:textColor="#000"
                 android:textSize="20sp"
@@ -154,10 +153,11 @@
             <TextView
                 android:layout_weight="0.5"
                 android:id="@+id/last_name"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
-                android:layout_marginTop="50dp"
+
+                android:gravity="left"
                 android:text=""
                 android:textColor="#000"
                 android:textSize="20sp"
@@ -172,10 +172,9 @@
             <TextView
                 android:layout_weight="0.5"
                 android:id="@+id/lbl_gender"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
-                android:layout_marginTop="50dp"
                 android:text="Gender:"
                 android:textColor="#000"
                 android:textSize="20sp"
@@ -183,10 +182,10 @@
             <TextView
                 android:layout_weight="0.5"
                 android:id="@+id/gender"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
-                android:layout_marginTop="50dp"
+                android:gravity="left"
                 android:text=""
                 android:textColor="#000"
                 android:textSize="20sp"
@@ -201,10 +200,9 @@
             <TextView
                 android:layout_weight="0.5"
                 android:id="@+id/lbl_dob"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
-                android:layout_marginTop="50dp"
                 android:text="Date of Birth:"
                 android:textColor="#000"
                 android:textSize="20sp"
@@ -212,10 +210,10 @@
             <TextView
                 android:layout_weight="0.5"
                 android:id="@+id/dob"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
-                android:layout_marginTop="50dp"
+                android:gravity="left"
                 android:text=""
                 android:textColor="#000"
                 android:textSize="20sp"
@@ -230,10 +228,9 @@
             <TextView
                 android:layout_weight="0.5"
                 android:id="@+id/lbl_exp"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
-                android:layout_marginTop="50dp"
                 android:text="Expiration Date:"
                 android:textColor="#000"
                 android:textSize="20sp"
@@ -241,64 +238,10 @@
             <TextView
                 android:layout_weight="0.5"
                 android:id="@+id/exp"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
-                android:layout_marginTop="50dp"
-                android:text=""
-                android:textColor="#000"
-                android:textSize="20sp"
-                tools:ignore="MissingConstraints" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:weightSum="1"
-            tools:ignore="MissingConstraints">
-            <TextView
-                android:layout_weight="0.5"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerHorizontal="true"
-                android:layout_marginTop="50dp"
-                android:text="Expiration Date:"
-                android:textColor="#000"
-                android:textSize="20sp"
-                tools:ignore="MissingConstraints" />
-            <TextView
-                android:layout_weight="0.5"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerHorizontal="true"
-                android:layout_marginTop="50dp"
-                android:text=""
-                android:textColor="#000"
-                android:textSize="20sp"
-                tools:ignore="MissingConstraints" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:weightSum="1"
-            tools:ignore="MissingConstraints">
-            <TextView
-                android:layout_weight="0.5"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerHorizontal="true"
-                android:layout_marginTop="50dp"
-                android:text="Expiration Date:"
-                android:textColor="#000"
-                android:textSize="20sp"
-                tools:ignore="MissingConstraints" />
-            <TextView
-                android:layout_weight="0.5"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerHorizontal="true"
-                android:layout_marginTop="50dp"
+                android:gravity="left"
                 android:text=""
                 android:textColor="#000"
                 android:textSize="20sp"

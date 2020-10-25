@@ -20,9 +20,14 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Base64;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.SurfaceView;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import androidx.annotation.RequiresApi;
@@ -126,6 +131,10 @@ public class MainActivity extends AppCompatActivity {
 
     LoadingView loadingView;
 
+    private SurfaceView cameraPreview;
+    private RelativeLayout overlay;
+    private LayoutInflater controlInflater;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -136,6 +145,16 @@ public class MainActivity extends AppCompatActivity {
         imageView = (ImageView) findViewById(R.id.image_view);
         transformBtn = (Button) findViewById(R.id.transform_btn);
         loadingView= (LoadingView) findViewById(R.id.loading_view);
+
+        // Optional: Hide the status bar at the top of the window
+//        requestWindowFeature(Window.FEATURE_NO_TITLE);
+//        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
+        // Set the content view and get references to our views
+//        setContentView(R.layout.content_image_capture);
+//        cameraPreview = (SurfaceView) findViewById(R.id.camera_preview);
+//        overlay = (RelativeLayout) findViewById(R.id.overlay);
+
 
         transformBtn.setVisibility(View.INVISIBLE);
 //        selectImage(MainActivity.this);
@@ -180,33 +199,32 @@ public class MainActivity extends AppCompatActivity {
                 step1();
                 step2();
                 step3();
-
-//                showProgressDialog(getResources().getString(R.string.loading));
-//                AsyncTask.execute(new Runnable() {
-//                    BitmapDrawable drawable = (BitmapDrawable) imageView.getDrawable();
-//                    Bitmap bitmap;
-//                    @Override
-//                    public void run() {
-//                        try {
-////                            bitmapArg = transformImage();
-//                            callApi();
-//                        } catch (Exception e) {
-//                            e.printStackTrace();
-//                            dismissDialog();
-//                        }
-//                        MainActivity.this.runOnUiThread(new Runnable() {
-//                            @Override
-//                            public void run() {
-//                                dismissDialog();
-//                            }
-//                        });
-//                    }
-//                });
-//                dismissDialog();
-
             }
         });
     }
+
+    private void addView()
+    {
+        controlInflater = LayoutInflater.from(getBaseContext());
+        View viewControl = controlInflater.inflate(R.layout.id_card_camera_overlay, null);
+        WindowManager.LayoutParams layoutParamsControl = new WindowManager.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT);
+        this.addContentView(viewControl, layoutParamsControl);
+
+    }
+
+//    @Override
+//    public void onWindowFocusChanged(boolean hasFocus) {
+//        super.onWindowFocusChanged(hasFocus);
+//
+//        // Get the preview size
+//        int previewWidth = cameraPreview.getMeasuredWidth(),
+//                previewHeight = cameraPreview.getMeasuredHeight();
+//
+//        // Set the height of the overlay so that it makes the preview a square
+//        RelativeLayout.LayoutParams overlayParams = (RelativeLayout.LayoutParams) overlay.getLayoutParams();
+//        overlayParams.height = previewHeight - previewWidth;
+//        overlay.setLayoutParams(overlayParams);
+//    }
 
     private  boolean checkPermissions() {
         int result;
@@ -261,14 +279,17 @@ public class MainActivity extends AppCompatActivity {
                     ActivityCompat.requestPermissions(MainActivity.this,
                             new String[]{Manifest.permission.CAMERA},
                             1);
+
                     ContentValues values = new ContentValues();
                     values.put(MediaStore.Images.Media.TITLE, "New Picture");
                     values.put(MediaStore.Images.Media.DESCRIPTION, "From your Camera");
+
                     imageUri = getContentResolver().insert(
                             MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
                     Intent takePicture = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                     takePicture.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
                     startActivityForResult(takePicture, 0);
+
 
                 } else if (options[item].equals("Choose from Gallery")) {
                     ActivityCompat.requestPermissions(MainActivity.this,
@@ -288,6 +309,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+
         if (resultCode != RESULT_CANCELED) {
             switch (requestCode) {
                 case 0:
@@ -534,66 +556,11 @@ public class MainActivity extends AppCompatActivity {
         Mat outputMat = new Mat();
         Utils.bitmapToMat(newBitmap, outputMat);
 
-//        Imgproc.GaussianBlur(outputMat, outputMat, new org.opencv.core.Size(5, 5), 5);
-//
-//        Imgproc.cvtColor(outputMat, outputMat, Imgproc.COLOR_BGR2GRAY);
-//
-//        // find the contours
-//        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
-//        findContours(outputMat, contours, outputMat, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
-//
-//        /*
-//         *
-//         * previous code
-//         *
-//         */
-//        final Mat target = new GetTargetContour(contours).target();
-//        if (contours == null) {
-//            Log.w("Contours", "Can't find target contour, aborting...");
-//            return null;
-//        }
-//        Log.d("Contours", "Target contour found!");
-//
-//
-//        double maxVal = 0;
-//        int maxValIdx = 0;
-//        for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++)
-//        {
-//            double contourArea = Imgproc.contourArea(contours.get(contourIdx));
-//            if (maxVal < contourArea)
-//            {
-//                maxVal = contourArea;
-//                maxValIdx = contourIdx;
-//            }
-//        }
-//
-//        Mat duply = matImage.clone();
-//
-//        final MatOfPoint biggest = contours.get(maxValIdx);
-//        List<Point> corners = getCornersFromPoints(biggest.toList());
-//        System.out.println("corner size " + corners.size());
-//        for (Point corner : corners) {
-//            Imgproc.drawMarker(duply, corner, new Scalar(0,191,255, 255), 0, 20, 5);
-//        }
-//
-//        Imgproc.drawContours(duply, contours, maxValIdx, new Scalar(124,252,0, 255), 5);
-//
-//        //         Sort points
-//        Point[] points = new MatOfPoint(contours.get(maxValIdx)).toArray();
-//        points = new SortPointArray(points).sort();
-//        Log.d("Points", "Points: " + Arrays.toString(points));
-
-        // Now apply perspective transformation
         final TransformPerspective transformPerspective = new TransformPerspective(
                 points, matImage);
         final Mat transformed = transformPerspective.transform();
-
-
-
         // With the transformed points, now convert the image to gray scale
         // and threshold it to give it the paper effect
-
-
         Size transformedSize = transformed.size();
         resultW = (int) transformedSize.width;
         resultH = (int) transformedSize.height;
@@ -619,8 +586,6 @@ public class MainActivity extends AppCompatActivity {
 //        } catch (Exception e) {
 //            e.printStackTrace();
 //        }
-//
-//        imageView.setImageBitmap(bitmapImg);
         return bitmapImg;
     }
 
@@ -645,128 +610,6 @@ public class MainActivity extends AppCompatActivity {
         final Bitmap bitmapImg = Bitmap.createBitmap(resultW, resultH/2, Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(cropped, bitmapImg);
         return bitmapImg;
-    }
-
-
-    public void transformImage() {
-        Bitmap edgedBitmap = detectEdges(bitmapArg);
-
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true;
-
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        bitmapArg.compress(Bitmap.CompressFormat.PNG, 100, stream);
-
-
-        Mat matImage = new Mat();
-        Utils.bitmapToMat(bitmapArg, matImage);
-
-
-        String filename = "pippo"+ new Timestamp(System.currentTimeMillis()).getTime() +".png";
-        File sd = Environment.getExternalStorageDirectory();
-        File dest = new File(sd, filename);
-
-        Mat outputMat = new Mat();
-
-        Mat hierarchy = new Mat();
-
-        Utils.bitmapToMat(edgedBitmap, outputMat);
-        Utils.bitmapToMat(edgedBitmap, hierarchy);
-
-        Imgproc.GaussianBlur(outputMat, outputMat, new org.opencv.core.Size(5, 5), 5);
-
-        Imgproc.cvtColor(outputMat, outputMat, Imgproc.COLOR_BGR2GRAY);
-
-        // find the contours
-        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
-        findContours(outputMat, contours, outputMat, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
-
-        /*
-        *
-        * previous code
-        *
-        */
-        final Mat target = new GetTargetContour(contours).target();
-        if (contours == null) {
-            Log.w("Contours", "Can't find target contour, aborting...");
-//            return null;
-        }
-        Log.d("Contours", "Target contour found!");
-
-
-        double maxVal = 0;
-        int maxValIdx = 0;
-        for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++)
-        {
-            double contourArea = Imgproc.contourArea(contours.get(contourIdx));
-            if (maxVal < contourArea)
-            {
-                maxVal = contourArea;
-                maxValIdx = contourIdx;
-            }
-        }
-
-        Mat duply = matImage.clone();
-
-        final MatOfPoint biggest = contours.get(maxValIdx);
-        List<Point> corners = getCornersFromPoints(biggest.toList());
-        System.out.println("corner size " + corners.size());
-        for (Point corner : corners) {
-            Imgproc.drawMarker(duply, corner, new Scalar(0,191,255, 255), 0, 20, 5);
-        }
-
-        Imgproc.drawContours(duply, contours, maxValIdx, new Scalar(124,252,0, 255), 5);
-
-
-        //         Sort points
-        Point[] points = new MatOfPoint(contours.get(maxValIdx)).toArray();
-        points = new SortPointArray(points).sort();
-        Log.d("Points", "Points: " + Arrays.toString(points));
-
-        // Now apply perspective transformation
-        final TransformPerspective transformPerspective = new TransformPerspective(
-                points, matImage);
-        final Mat transformed = transformPerspective.transform();
-
-
-
-        // With the transformed points, now convert the image to gray scale
-        // and threshold it to give it the paper effect
-        Imgproc.cvtColor(transformed, transformed, Imgproc.COLOR_BGRA2GRAY);
-        Imgproc.adaptiveThreshold(transformed, transformed, 251,
-                Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 89, 50);
-
-        final Size transformedSize = transformed.size();
-        final int resultW = (int) transformedSize.width;
-        final int resultH = (int) transformedSize.height;
-
-        final Mat result = new Mat(resultH, resultW, CvType.CV_8UC4);
-        transformed.convertTo(result, CvType.CV_8UC4);
-
-
-
-//        Bitmap bitmapImg_result = Bitmap.createBitmap(resultW, resultH/2, Bitmap.Config.ARGB_8888);
-//        Utils.matToBitmap(cropped, bitmapImg_result);
-//        duply.release();
-//        filename = "result"+ new Timestamp(System.currentTimeMillis()).getTime() +".jpg";
-//        sd = Environment.getExternalStorageDirectory();
-//        dest = new File(sd, filename);
-//        Log.d("ImagePath", dest.getPath());
-//        try {
-//            FileOutputStream out = new FileOutputStream(dest);
-//            bitmapImg.compress(Bitmap.CompressFormat.JPEG, 100, out);
-//            out.flush();
-//            out.close();
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//        Mat croppedFrame = bitmapImg(Rect(0, bitmapImg.rows/2, bitmapImg.cols, bitmapImg.rows/2));
-        /*
-        *
-        * End
-        *
-        */
-//        return bitmapImg;
     }
 
 
@@ -808,17 +651,6 @@ public class MainActivity extends AppCompatActivity {
     //method to convert the selected image to base64 encoded string
 
     public static String ConvertBitmapToString(Bitmap bitmap){
-//        String encodedImage = "";
-//
-//        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-//        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
-//        try {
-//            encodedImage= URLEncoder.encode(Base64.encodeToString(byteArrayOutputStream.toByteArray(), Base64.DEFAULT), "UTF-8");
-//        } catch (UnsupportedEncodingException e) {
-//            e.printStackTrace();
-//        }
-//
-//        return encodedImage;
 
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
@@ -910,7 +742,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onFailureResponse() {
-        Toast.makeText(getApplicationContext(), "Try again!", Toast.LENGTH_LONG).show();
+        this.runOnUiThread(new Runnable() {
+            public void run() {
+                Toast.makeText(getApplicationContext(), "Try again!", Toast.LENGTH_LONG).show();
+                imageView.setImageBitmap(null);
+            }
+        });
+
     }
 
     private void logLargeString(String content) {
