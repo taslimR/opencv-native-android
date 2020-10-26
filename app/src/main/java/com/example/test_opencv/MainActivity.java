@@ -7,11 +7,14 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.graphics.drawable.BitmapDrawable;
+import android.hardware.Camera;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -84,6 +87,8 @@ public class MainActivity extends AppCompatActivity {
     boolean labelSet = false;
     Bitmap bitmapArg;
 
+    Camera camera;
+
     Point[] points;
 
     private static ProgressDialogFragment progressDialogFragment;
@@ -92,6 +97,7 @@ public class MainActivity extends AppCompatActivity {
 
     String[] permissions= new String[]{
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.READ_EXTERNAL_STORAGE,
             Manifest.permission.CAMERA,
 //            Manifest.permission.ACCESS_COARSE_LOCATION,
 //            Manifest.permission.ACCESS_FINE_LOCATION
@@ -141,6 +147,7 @@ public class MainActivity extends AppCompatActivity {
         imageView = (ImageView) findViewById(R.id.image_view);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
         imageView = (ImageView) findViewById(R.id.image_view);
         transformBtn = (Button) findViewById(R.id.transform_btn);
@@ -203,13 +210,11 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void addView()
+    public Bitmap RotateBitmap(Bitmap source, float angle)
     {
-        controlInflater = LayoutInflater.from(getBaseContext());
-        View viewControl = controlInflater.inflate(R.layout.id_card_camera_overlay, null);
-        WindowManager.LayoutParams layoutParamsControl = new WindowManager.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT);
-        this.addContentView(viewControl, layoutParamsControl);
-
+        Matrix matrix = new Matrix();
+        matrix.postRotate(angle);
+        return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, false);
     }
 
 //    @Override
@@ -265,7 +270,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void selectImage(Context context) {
-        final CharSequence[] options = { "Take Photo", "Choose from Gallery","Cancel" };
+        final CharSequence[] options = { "Take Photo", "Cancel" };
 
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setTitle("Choose your profile picture");
@@ -280,9 +285,17 @@ public class MainActivity extends AppCompatActivity {
                             new String[]{Manifest.permission.CAMERA},
                             1);
 
+                    ActivityCompat.requestPermissions(MainActivity.this,
+                            new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                            1);
+//                    Camera.Parameters parameters = camera.getParameters();
+//                    parameters.set("orientation", "portrait");
+//                    camera.setParameters(parameters);
+
                     ContentValues values = new ContentValues();
                     values.put(MediaStore.Images.Media.TITLE, "New Picture");
                     values.put(MediaStore.Images.Media.DESCRIPTION, "From your Camera");
+//                    values.put();
 
                     imageUri = getContentResolver().insert(
                             MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
@@ -291,12 +304,15 @@ public class MainActivity extends AppCompatActivity {
                     startActivityForResult(takePicture, 0);
 
 
-                } else if (options[item].equals("Choose from Gallery")) {
-                    ActivityCompat.requestPermissions(MainActivity.this,
-                            new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                            1);
-                    Intent pickPhoto = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                    startActivityForResult(pickPhoto , 1);
+//                } else if (options[item].equals("Choose from Gallery")) {
+//                    ActivityCompat.requestPermissions(MainActivity.this,
+//                            new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+//                            1);
+//                    ActivityCompat.requestPermissions(MainActivity.this,
+//                            new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+//                            1);
+//                    Intent pickPhoto = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+//                    startActivityForResult(pickPhoto , 1);
 
                 } else if (options[item].equals("Cancel")) {
                     dialog.dismiss();
@@ -321,7 +337,11 @@ public class MainActivity extends AppCompatActivity {
 
                             imageView.setImageBitmap(thumbnail);
                             imageurl = getRealPathFromURI(imageUri);
-                            imageView.setImageBitmap(BitmapFactory.decodeFile(imageurl));
+//                            imageView.setImageBitmap(RotateBitmap(BitmapFactory.decodeFile(imageurl), 90));
+                            if(Build.VERSION.SDK_INT >= 29)
+                                imageView.setImageBitmap(RotateBitmap(BitmapFactory.decodeFile(imageurl), 90));
+                            else
+                                imageView.setImageBitmap(BitmapFactory.decodeFile(imageurl));
                             transformBtn.setVisibility(View.VISIBLE);
                         } catch (IOException e) {
                             e.printStackTrace();
@@ -341,6 +361,9 @@ public class MainActivity extends AppCompatActivity {
 
                                 int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
                                 String picturePath = cursor.getString(columnIndex);
+//                                if(Build.VERSION.SDK_INT >= 29)
+//                                    imageView.setImageBitmap(RotateBitmap(BitmapFactory.decodeFile(picturePath), 90));
+//                                else
                                 imageView.setImageBitmap(BitmapFactory.decodeFile(picturePath));
                                 cursor.close();
                             }
@@ -666,7 +689,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
         try {
-            String postUrl= "http://192.168.0.106:8000/v1/api/nidscan/";
+            String postUrl= "http://192.168.0.107:8000/v1/api/nidscan/";
             String postBody= null;
 
                 postBody = "{" +
