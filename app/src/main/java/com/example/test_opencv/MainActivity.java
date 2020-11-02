@@ -15,6 +15,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.graphics.drawable.BitmapDrawable;
 import android.hardware.Camera;
+import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -26,9 +27,11 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
@@ -57,6 +60,8 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -66,8 +71,10 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -76,7 +83,6 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 import static org.opencv.imgproc.Imgproc.findContours;
-
 
 public class MainActivity extends AppCompatActivity {
 
@@ -87,8 +93,6 @@ public class MainActivity extends AppCompatActivity {
     boolean labelSet = false;
     Bitmap bitmapArg;
 
-    Camera camera;
-
     Point[] points;
 
     private static ProgressDialogFragment progressDialogFragment;
@@ -98,30 +102,8 @@ public class MainActivity extends AppCompatActivity {
     String[] permissions= new String[]{
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
             Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.CAMERA,
-//            Manifest.permission.ACCESS_COARSE_LOCATION,
-//            Manifest.permission.ACCESS_FINE_LOCATION
+            Manifest.permission.CAMERA
     };
-
-
-//    public Mat matImage;
-
-//    private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
-//        @Override
-//        public void onManagerConnected(int status) {
-//            switch (status) {
-//                case LoaderCallbackInterface.SUCCESS:
-//                {
-//                    Log.i("OpenCV", "OpenCV loaded successfully");
-//                    matImage = new Mat();
-//                } break;
-//                default:
-//                {
-//                    super.onManagerConnected(status);
-//                } break;
-//            }
-//        }
-//    };
 
     static {
         OpenCVLoader.initDebug();
@@ -137,11 +119,6 @@ public class MainActivity extends AppCompatActivity {
 
     LoadingView loadingView;
 
-    private SurfaceView cameraPreview;
-    private RelativeLayout overlay;
-    private LayoutInflater controlInflater;
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         imageView = (ImageView) findViewById(R.id.image_view);
@@ -153,20 +130,7 @@ public class MainActivity extends AppCompatActivity {
         transformBtn = (Button) findViewById(R.id.transform_btn);
         loadingView= (LoadingView) findViewById(R.id.loading_view);
 
-        // Optional: Hide the status bar at the top of the window
-//        requestWindowFeature(Window.FEATURE_NO_TITLE);
-//        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-
-        // Set the content view and get references to our views
-//        setContentView(R.layout.content_image_capture);
-//        cameraPreview = (SurfaceView) findViewById(R.id.camera_preview);
-//        overlay = (RelativeLayout) findViewById(R.id.overlay);
-
-
         transformBtn.setVisibility(View.INVISIBLE);
-//        selectImage(MainActivity.this);
-//        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-//        setSupportActionBar(toolbar);
 
         imageView = (ImageView) findViewById(R.id.image_view);
 
@@ -185,8 +149,6 @@ public class MainActivity extends AppCompatActivity {
             @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
             @Override
             public void onClick(View v) {
-
-//                showProgressDialog(getResources().getString(R.string.loading));
                 loadingView.showLoading();
                 loadingView.bringToFront();
                 labelSet = true;
@@ -199,7 +161,6 @@ public class MainActivity extends AppCompatActivity {
                 fab.setVisibility(View.INVISIBLE);
                 BitmapDrawable drawable = (BitmapDrawable) imageView.getDrawable();
                 bitmapArg = drawable.getBitmap();
-
 
                 OpenCVLoader.initDebug();
 
@@ -217,20 +178,6 @@ public class MainActivity extends AppCompatActivity {
         return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(), matrix, false);
     }
 
-//    @Override
-//    public void onWindowFocusChanged(boolean hasFocus) {
-//        super.onWindowFocusChanged(hasFocus);
-//
-//        // Get the preview size
-//        int previewWidth = cameraPreview.getMeasuredWidth(),
-//                previewHeight = cameraPreview.getMeasuredHeight();
-//
-//        // Set the height of the overlay so that it makes the preview a square
-//        RelativeLayout.LayoutParams overlayParams = (RelativeLayout.LayoutParams) overlay.getLayoutParams();
-//        overlayParams.height = previewHeight - previewWidth;
-//        overlay.setLayoutParams(overlayParams);
-//    }
-
     private  boolean checkPermissions() {
         int result;
         List<String> listPermissionsNeeded = new ArrayList<>();
@@ -247,7 +194,6 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissionsList[], int[] grantResults) {
         switch (requestCode) {
@@ -261,8 +207,6 @@ public class MainActivity extends AppCompatActivity {
                         }
 
                     }
-                    // Show permissionsDenied
-//                    updateViews();
                 }
                 return;
             }
@@ -288,32 +232,19 @@ public class MainActivity extends AppCompatActivity {
                     ActivityCompat.requestPermissions(MainActivity.this,
                             new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
                             1);
-//                    Camera.Parameters parameters = camera.getParameters();
-//                    parameters.set("orientation", "portrait");
-//                    camera.setParameters(parameters);
 
                     ContentValues values = new ContentValues();
                     values.put(MediaStore.Images.Media.TITLE, "New Picture");
                     values.put(MediaStore.Images.Media.DESCRIPTION, "From your Camera");
-//                    values.put();
 
                     imageUri = getContentResolver().insert(
                             MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+//                    Intent takePicture = new Intent(MainActivity.this, CameraActivity.class);
+//                    takePicture.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
+//                    startActivityForResult(takePicture, 0);
                     Intent takePicture = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                     takePicture.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
                     startActivityForResult(takePicture, 0);
-
-
-//                } else if (options[item].equals("Choose from Gallery")) {
-//                    ActivityCompat.requestPermissions(MainActivity.this,
-//                            new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-//                            1);
-//                    ActivityCompat.requestPermissions(MainActivity.this,
-//                            new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
-//                            1);
-//                    Intent pickPhoto = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-//                    startActivityForResult(pickPhoto , 1);
-
                 } else if (options[item].equals("Cancel")) {
                     dialog.dismiss();
                 }
@@ -337,7 +268,6 @@ public class MainActivity extends AppCompatActivity {
 
                             imageView.setImageBitmap(thumbnail);
                             imageurl = getRealPathFromURI(imageUri);
-//                            imageView.setImageBitmap(RotateBitmap(BitmapFactory.decodeFile(imageurl), 90));
                             if(Build.VERSION.SDK_INT >= 29)
                                 imageView.setImageBitmap(RotateBitmap(BitmapFactory.decodeFile(imageurl), 90));
                             else
@@ -361,9 +291,6 @@ public class MainActivity extends AppCompatActivity {
 
                                 int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
                                 String picturePath = cursor.getString(columnIndex);
-//                                if(Build.VERSION.SDK_INT >= 29)
-//                                    imageView.setImageBitmap(RotateBitmap(BitmapFactory.decodeFile(picturePath), 90));
-//                                else
                                 imageView.setImageBitmap(BitmapFactory.decodeFile(picturePath));
                                 cursor.close();
                             }
@@ -386,7 +313,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void step1() {
-//        showProgressDialog(getResources().getString(R.string.loading));
         AsyncTask.execute(new Runnable() {
             @Override
             public void run() {
@@ -399,7 +325,6 @@ public class MainActivity extends AppCompatActivity {
                             transformed = bitmapArg;
                             imageView.setImageBitmap(bitmapArg);
                             e.printStackTrace();
-//                            dismissDialog();
                         }
                     });
                 }
@@ -407,7 +332,6 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         imageView.setImageBitmap(transformed);
-//                        dismissDialog();
                     }
                 });
             }
@@ -415,7 +339,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void step2() {
-//        showProgressDialog(getResources().getString(R.string.loading));
         AsyncTask.execute(new Runnable() {
             @Override
             public void run() {
@@ -428,7 +351,6 @@ public class MainActivity extends AppCompatActivity {
                             transformed = bitmapArg;
                             imageView.setImageBitmap(bitmapArg);
                             e.printStackTrace();
-//                            dismissDialog();
                         }
                     });
                 }
@@ -436,7 +358,6 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         imageView.setImageBitmap(transformed);
-//                        dismissDialog();
                     }
                 });
             }
@@ -445,7 +366,6 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void step3() {
-//        showProgressDialog(getResources().getString(R.string.loading));
         AsyncTask.execute(new Runnable() {
             @Override
             public void run() {
@@ -458,7 +378,6 @@ public class MainActivity extends AppCompatActivity {
                             transformed = bitmapArg;
                             imageView.setImageBitmap(bitmapArg);
                             e.printStackTrace();
-//                            dismissDialog();
                         }
                     });
                 }
@@ -477,7 +396,6 @@ public class MainActivity extends AppCompatActivity {
                         transformBtn.setEnabled(true);
                         transformBtn.setVisibility(View.INVISIBLE);
                         fab.setVisibility(View.VISIBLE);
-//                        dismissDialog();
                     }
                 });
             }
@@ -502,17 +420,10 @@ public class MainActivity extends AppCompatActivity {
 
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         bitmapArg.compress(Bitmap.CompressFormat.PNG, 100, stream);
-//        newBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
 
         Mat matImage = new Mat();
         Utils.bitmapToMat(bitmapArg, matImage);
-
-//        Mat outputMat = new Mat();
-//        Utils.bitmapToMat(newBitmap, outputMat);
-
         Imgproc.GaussianBlur(edges, edges, new Size(5, 5), 5);
-
-//        Imgproc.cvtColor(edges, edges, Imgproc.COLOR_BGR2GRAY);
 
         // find the contours
         List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
@@ -523,13 +434,11 @@ public class MainActivity extends AppCompatActivity {
          * previous code
          *
          */
-        final Mat target = new GetTargetContour(contours).target();
         if (contours == null) {
             Log.w("Contours", "Can't find target contour, aborting...");
             return null;
         }
         Log.d("Contours", "Target contour found!");
-
 
         double maxVal = 0;
         int maxValIdx = 0;
@@ -582,6 +491,7 @@ public class MainActivity extends AppCompatActivity {
         final TransformPerspective transformPerspective = new TransformPerspective(
                 points, matImage);
         final Mat transformed = transformPerspective.transform();
+
         // With the transformed points, now convert the image to gray scale
         // and threshold it to give it the paper effect
         Size transformedSize = transformed.size();
@@ -593,22 +503,6 @@ public class MainActivity extends AppCompatActivity {
 
         final Bitmap bitmapImg = Bitmap.createBitmap(resultW, resultH, Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(result, bitmapImg);
-
-//        Bitmap bitmapImg_result = Bitmap.createBitmap(resultW, resultH, Bitmap.Config.ARGB_8888);
-//        Utils.matToBitmap(result, bitmapImg_result);
-//        result.release();
-//        String filename = "result"+ new Timestamp(System.currentTimeMillis()).getTime() +".png";
-//        File sd = Environment.getExternalStorageDirectory();
-//        File dest = new File(sd, filename);
-//        Log.d("ImagePath", dest.getPath());
-//        try {
-//            FileOutputStream out = new FileOutputStream(dest);
-//            bitmapImg.compress(Bitmap.CompressFormat.PNG, 100, out);
-//            out.flush();
-//            out.close();
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
         return bitmapImg;
     }
 
@@ -635,13 +529,28 @@ public class MainActivity extends AppCompatActivity {
         return bitmapImg;
     }
 
+    public void convertBitMapToImage(Bitmap bMap, String imageName, String imageExtension) {
+        String filename = imageName + new Timestamp(System.currentTimeMillis()).getTime() +"." + imageExtension;
+        File sd = Environment.getExternalStorageDirectory();
+        File dest = new File(sd, filename);
+        Log.d("ImagePath", dest.getPath());
+        try {
+            FileOutputStream out = new FileOutputStream(dest);
+            bMap.compress(Bitmap.CompressFormat.PNG, 100, out);
+            out.flush();
+            out.close();
+            Toast.makeText(getApplicationContext(), "Image saved successfully", Toast.LENGTH_LONG).show();
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(getApplicationContext(), "Couldn't save image", Toast.LENGTH_LONG).show();
+        }
+    }
 
     private List<Point> getCornersFromPoints(final List<Point> points) {
         double minX = 0;
         double minY = 0;
         double maxX = 0;
         double maxY = 0;
-
 
         for (Point point : points) {
             double x = point.x;
@@ -670,11 +579,9 @@ public class MainActivity extends AppCompatActivity {
         return corners;
     }
 
-
     //method to convert the selected image to base64 encoded string
 
     public static String ConvertBitmapToString(Bitmap bitmap){
-
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
         byte[] bytes = byteArrayOutputStream.toByteArray();
@@ -689,7 +596,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
         try {
-            String postUrl= "http://192.168.0.107:8000/v1/api/nidscan/";
+            String postUrl= "http://192.168.43.221:8000/v1/api/nidscan/";
             String postBody= null;
 
                 postBody = "{" +
@@ -782,6 +689,7 @@ public class MainActivity extends AppCompatActivity {
             Log.d("mi", content);
         }
     }
+
 
     protected synchronized void showProgressDialog(String message) {
         if (progressDialogFragment != null && progressDialogFragment.isVisible()) {
