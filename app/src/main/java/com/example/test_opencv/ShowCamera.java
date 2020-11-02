@@ -2,6 +2,7 @@ package com.example.test_opencv;
 
 import android.content.Context;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
 import android.hardware.Camera;
 import android.util.Log;
 import android.view.SurfaceHolder;
@@ -60,6 +61,12 @@ public class ShowCamera extends SurfaceView implements SurfaceHolder.Callback {
             parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
         }
 
+        List<String> flashModes = parameters.getSupportedFlashModes();
+        if (flashModes.contains(Camera.Parameters.FLASH_MODE_AUTO)) {
+            parameters.setFlashMode(Camera.Parameters.FLASH_MODE_AUTO);
+        }
+//        parameters.setFlashMode(Camera.Parameters.FLASH_MODE_AUTO);
+
         camera.setParameters(parameters);
 
         try {
@@ -72,7 +79,17 @@ public class ShowCamera extends SurfaceView implements SurfaceHolder.Callback {
 
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-
+        Camera.Parameters params = camera.getParameters();
+        List<Camera.Size> sizes = params.getSupportedPreviewSizes();
+        Camera.Size selected = sizes.get(0);
+        params.setPreviewSize(selected.width,selected.height);
+        camera.setParameters(params);
+        try {
+            camera.setPreviewDisplay(surfaceHolder);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        camera.startPreview();
     }
 
     @Override
